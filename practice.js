@@ -238,3 +238,30 @@ db.products.find(
   {$where: "(this.name[0] == 'A' && this.price >= 100) || (this.name[0] == 'B' && this.price <= 100)"},
   {_id: 0, name: 1, price: 1}
 );
+
+// ----------------------------------------
+// Aggregating Products
+// ----------------------------------------
+
+// 1. Find the total number of sales each department made and sort the results by the department name
+
+db.products.aggregate([
+  {$group: {  _id: "$name" , sum: {$sum: "$sales"} }},
+  {$sort: { _id: 1}}
+]);
+
+// 2. Find the total number of sales each department made of a product with a price of at least $100 and sort the results by the department name
+
+db.products.aggregate([
+  {$match: { price: { $gte: 100} }},
+  {$group: {  _id: "$name" , sum: {$sum: "$sales"} }},
+  {$sort: { _id: 1}}
+]);
+
+// 3. Find the number of out of stock products in each department and sort the results by the department name
+
+db.products.aggregate([
+  {$match: { stock: 0 }},
+  {$group: {  _id: "$department" , sum: {$sum: 1} }},
+  {$sort: { _id: 1}}
+]);
