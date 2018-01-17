@@ -239,9 +239,9 @@ db.products.find(
   {_id: 0, name: 1, price: 1}
 );
 
-// ----------------------------------------
-// Aggregating Products
-// ----------------------------------------
+// --------------------------------------------------
+// Aggregating Products With the Aggregation Pipeline
+// --------------------------------------------------
 
 // 1. Find the total number of sales each department made and sort the results by the department name
 
@@ -265,3 +265,43 @@ db.products.aggregate([
   {$group: {  _id: "$department" , sum: {$sum: 1} }},
   {$sort: { _id: 1}}
 ]);
+
+// -----------------------------------
+// Aggregating Products With mapReduce
+// -----------------------------------
+
+// 1. Find the number of products with each color
+
+db.products.mapReduce(
+  function(){ emit(this.color, 1); },
+  function(k, v){ return Array.sum(v); },
+  {query: {},
+   out: "Totals_by_Color" }
+).find();
+
+// 2. Find the total revenue of each department (how much did each department make in sales?)
+
+db.products.mapReduce(
+  function(){ emit(this.department, (this.sales * this.price)); },
+  function(k, v){ return Array.sum(v); },
+  {query: {},
+   out: "Total_revenue" }
+).find();
+
+// 3. Find the potential revenue of each product (how much can each product make if the entire remaining stock is sold?)
+
+db.products.mapReduce(
+  function(){ emit(this.department, (this.stock * this.price)); },
+  function(k, v){ return Array.sum(v); },
+  {query: {},
+   out: "Potential_revenue" }
+).find();
+
+// 4. Find the sum of the total and potential revenue for each product
+
+db.products.mapReduce(
+  function(){ emit(this.department, ((this.stock * this.price) + (this.sales * this.price))); },
+  function(k, v){ return Array.sum(v); },
+  {query: {},
+   out: "Potential_revenue" }
+).find();
